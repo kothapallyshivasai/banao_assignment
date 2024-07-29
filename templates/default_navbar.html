@@ -1,0 +1,25 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg mt-3">
+    <div class="container">
+        <a class="navbar-brand navbar-title" href="{% url 'home' %}"><img class="navbar-logo" src="{% static 'images/healthcare.png' %}" alt="Website Icon">Health</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mb-2 ml-auto mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link hover-animation {% if active == 1 %} active {% endif %}" href="{% url 'home' %}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link hover-animation {% if active == 2 %} active {% endif %}" href="{% url 'patient_login' %}">Patient Login</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link hover-animation {% if active == 3 %} active {% endif %}" href="{% url 'register' %}">Register</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link hover-animation {% if active == 4 %} active {% endif %}" href="{% url 'doctor_login' %}">Doctor Login</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>

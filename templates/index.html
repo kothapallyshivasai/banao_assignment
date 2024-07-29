@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Home {% endblock %}
+
+{% block nav %}
+
+    {% include "default_navbar.html" %}
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="container mt-5">
+        <div class="row">
+            <div class="offset-lg-1 col-lg-5 pt-lg-5 mt-5 order-md-2 order-lg-1">
+                <h1 style="font-weight: 600;">Find Your doctor and make an appointment</h1>
+                <p class="mt-4 text-muted">
+                    Easily find the best doctors near you and book appointments online in just a few clicks. Experience hassle-free healthcare access at your fingertips.
+                </p>
+            <a href="{% url 'register' %}" class="btn btn-success mt-3 get-started-button">Get Started</a>
+            </div>
+            <div class="col-lg-5 col-8 offset-2 offset-lg-0 order-md-1 order-lg-2">
+                <img src="{% static 'images/home-page-image.jpg' %}" class="img-fluid home-page-image" alt="Home Page Image">
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
