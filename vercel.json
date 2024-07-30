@@ -1,0 +1,14 @@
+{
+    "builds": [{
+        "src": "banao_patient_doctor/wsgi.py",
+        "use": "@vercel/python",
+        "config": {"maxLambdaSize": "15mb", "runtime": "python3.11"}
+    }],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "banao_patient_doctor/wsgi.py"
+            }
+        ]
+
+}
