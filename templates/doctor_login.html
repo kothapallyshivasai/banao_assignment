@@ -11,12 +11,20 @@
 
 {% block content %}
 
+{% if messages %}
+    {% for message in messages %}
+        <script>
+            swal("Error", "{{message}}", "error")
+        </script>
+    {% endfor %}
+{% endif %}
+
 <div class="container-fluid bg-white mt-2">
     <div class="row">
-        <div class="col-md-8 p-0 order-md-2">
-            <img src="{% static 'images/login_image_cyberpunk.jpg' %}" class="img-fluid full-height-image" alt="Background Image" />
+        <div class="col-lg-8 p-0 order-lg-2 col-12 order-1">
+            <img src="{% static 'images/login_image_cyberpunk.jpg' %}" class="img-fluid" alt="Background Image" />
         </div>
-        <div class="col-md-4 order-md-1 mt-5">
+        <div class="col-lg-4 order-lg-1 mt-5 col-12 order-2 mb-3 mb-lg-0">
             <h1 class="text-center mt-4"><img src="{% static 'images/healthcare.png' %}" style="height: 50px; width: 50px;" alt="logo" /> <strong>Banao</strong></h1>
             <h3 class="text-center mt-2">Doctor Login</h3>
             <div class="mt-4 text-center">

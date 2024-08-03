@@ -13,7 +13,7 @@
 
     <div class="container mt-2">
         <div class="row">
-            <div class="col-10 offset-1">
+            <div class="col-xl-10 offset-xl-1 col-12">
                 <form action="{% url 'register' %}" method="post" onsubmit="validatePasswords(event)" enctype="multipart/form-data">
                     {% csrf_token %}
 
@@ -25,7 +25,7 @@
                         {% endfor %}
                     {% endif %}
 
-                    <div class="card bg-info">
+                    <div class="card bg-info mb-2">
                         <div class="card-title">
                             <h1 class="text-center mt-2">
                                 Register Page
@@ -34,7 +34,7 @@
                         </div>
                         <div class="card-body">
                             <div class="row">
-                                <div class="col-6">
+                                <div class="col-lg-6 col-10 offset-lg-0 offset-1 ">
                                     <div class="form-outline flex-fill mb-3">
                                         <input required type="text" name="first-name" id="first-name" class="form-control" />
                                         <label class="form-label" for="first-name">First Name</label>
@@ -67,7 +67,7 @@
                                     </div>
                                 </div>
             
-                                <div class="col-6">
+                                <div class="col-lg-6 col-10 offset-lg-0 offset-1 ">
                                     <div class="form-outline flex-fill mb-3">
                                         <input required type="password" name="password1" id="password1" class="form-control" />
                                         <label class="form-label" for="password1">Enter Password</label>
@@ -77,7 +77,7 @@
                                         <label class="form-label" for="password2">Enter Password Again</label>
                                     </div>
                                     <div class="form-outline flex-fill mb-3">
-                                        <textarea required name="address" id="address" cols="60" rows="4"></textarea>
+                                        <textarea required name="address" id="address" cols="55" rows="4"></textarea>
                                         <label class="form-label" for="address">Address and City</label>
                                     </div>
                                     <div class="form-outline flex-fill mb-3">

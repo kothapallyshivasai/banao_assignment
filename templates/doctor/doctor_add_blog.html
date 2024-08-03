@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Add Blog {% endblock %}
+
+{% block nav %}
+    {% include "doctor/doctor_navbar.html" %}
+{% endblock %}
+
+{% block content %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <script>
+                swal("Error", "{{message}}", "error")
+            </script>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="container">
+        <div class="row">
+            <div class="col-xl-10 offset-xl-1 col-12 mt-xl-1 mt-3">
+                <form method="post" action="{% url 'doctor-add-blog' %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="card shadow mb-3">
+                        <div class="card-body border-black">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="title" name="title">
+                            </div>
+                            <div class="mb-3">
+                                <label for="image" class="form-label">Image</label>
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            </div>
+                            <div class="mb-3">
+                                <label for="user" class="form-label">Author</label>
+                                <input type="password" class="form-control" id="user" value="{{user.username}}" readonly name="user">
+                            </div>
+                            <div class="mb-3">
+                                <label for="category_type" class="form-label">Category</label>
+                                <select class="form-control form-select" id="category_type" name="category_type">
+                                    <option value="Mental Health">Mental Health</option>
+                                    <option value="Heart Disease">Heart Disease</option>
+                                    <option value="Covid-19">Covid-19</option>
+                                    <option value="Immunization">Immunization</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="content" class="form-label">Content</label>
+                                <textarea class="form-control" id="content" name="content" rows="5"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="summary" class="form-label">Summary</label>
+                                <textarea class="form-control" id="summary" name="summary" rows="2"></textarea>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="draft" name="draft">
+                                <label class="form-check-label" for="draft">Save as Draft</label>
+                            </div>
+                            <button type="submit" onclick="form_validation(event)" class="btn btn-success">Add Blog</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function form_validation(event) {
+            event.preventDefault();
+        
+            var imageInput = document.getElementById("image");
+            var titleInput = document.getElementById("title");
+            var contentInput = document.getElementById("content");
+        
+            if (!imageInput.value.trim() && !titleInput.value.trim() && !contentInput.value.trim()) {
+                swal("Error", "Please upload an image, enter a title and content.", "error");
+            } 
+            else if (!imageInput.value.trim()) {
+                swal("Error", "Please upload an image.", "error");
+            } 
+            else if (!titleInput.value.trim()) {
+                swal("Error", "Please enter a title.", "error");
+            } 
+            else if (!contentInput.value.trim()) {
+                swal("Error", "Please enter content.", "error");
+            } 
+            else {
+                event.currentTarget.form.submit();
+            }
+        }
+    </script>
+
+{% endblock %}

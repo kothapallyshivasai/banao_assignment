@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Edit Blog - {{ blog.id }} {% endblock %}
+
+{% block nav %}
+    {% include "doctor/doctor_navbar.html" %}
+{% endblock %}
+
+{% block content %}
+
+    {% if messages %}
+        {% for message in messages %}
+            <script>
+                swal("Error", "{{ message }}", "error")
+            </script>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="container">
+        <div class="row">
+            <div class="col-xl-10 offset-xl-1 col-12 mt-xl-1 mt-3">
+                <div class="card shadow mb-3">
+                    <div class="card-body border-black">
+                        <form method="post" action="{% url 'doctor-edit-blog' blog.id %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Title</label>
+                                <input type="text" class="form-control" id="title" name="title" value="{{ blog.title }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="image" class="form-label">Image</label>
+                                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                                {% if blog.image %}
+                                    <img src="{{ blog.image.url }}" class="img-fluid mt-2" alt="Current Image">
+                                {% endif %}
+                            </div>
+                            <div class="mb-3">
+                                <label for="category_type" class="form-label">Category</label>
+                                <select class="form-control form-select" id="category_type" name="category_type">
+                                    <option value="Mental Health" {% if blog.category_type == "Mental Health" %}selected{% endif %}>Mental Health</option>
+                                    <option value="Heart Disease" {% if blog.category_type == "Heart Disease" %}selected{% endif %}>Heart Disease</option>
+                                    <option value="Covid-19" {% if blog.category_type == "Covid-19" %}selected{% endif %}>Covid-19</option>
+                                    <option value="Immunization" {% if blog.category_type == "Immunization" %}selected{% endif %}>Immunization</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="content" class="form-label">Content</label>
+                                <textarea class="form-control" id="content" name="content" rows="5">{{ blog.content }}</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="summary" class="form-label">Summary</label>
+                                <textarea class="form-control" id="summary" name="summary" rows="2">{{ blog.summary }}</textarea>
+                            </div>
+                            <div class="mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="draft" name="draft" {% if blog.draft %}checked{% endif %}>
+                                <label class="form-check-label" for="draft">Save as Draft</label>
+                            </div>
+                            <button type="submit" onclick="form_validation(event)" class="btn btn-success">Update Blog</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function form_validation(event) {
+            event.preventDefault();
+        
+            var titleInput = document.getElementById("title");
+            var contentInput = document.getElementById("content");
+        
+            if (!titleInput.value.trim() && !contentInput.value.trim()) {
+                swal("Error", "Please enter a title and content.", "error");
+            } 
+            else if (!titleInput.value.trim()) {
+                swal("Error", "Please enter a title.", "error");
+            } 
+            else if (!contentInput.value.trim()) {
+                swal("Error", "Please enter content.", "error");
+            } 
+            else {
+                event.currentTarget.form.submit();
+            }
+        }
+    </script>
+
+{% endblock %}

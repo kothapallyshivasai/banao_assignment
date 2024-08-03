@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} View Blogs {% endblock %}
+
+{% block nav %}
+    {% include "patient/patient_navbar.html" %}
+{% endblock %}
+
+{% block content %}
+
+    <div class="container mt-xl-2 mt-4">
+        <div class="row">
+            <div class="col-xl-3 col-lg-4 col-12">
+                <div class="card shadow mb-3">
+                    <div class="card-body">
+                        <form action="{% url 'patient-view-blogs' %}" method="post">
+                            {% csrf_token %}
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5>Filters</h5>
+                                    <button class="btn btn-success" type="submit">Search</button>
+                                </div>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="radio" name="category_type" id="mental-health" value="Mental Health" 
+                                        {% if selected_category == 'Mental Health' %}checked{% endif %} />
+                                    <label class="form-check-label" for="mental-health">Mental Health</label>
+                                </div>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="radio" name="category_type" id="heart-disease" value="Heart Disease" 
+                                        {% if selected_category == 'Heart Disease' %}checked{% endif %} />
+                                    <label class="form-check-label" for="heart-disease">Heart Disease</label>
+                                </div>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="radio" name="category_type" id="covid-19" value="Covid-19" 
+                                        {% if selected_category == 'Covid-19' %}checked{% endif %} />
+                                    <label class="form-check-label" for="covid-19">Covid-19</label>
+                                </div>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="radio" name="category_type" id="immunization" value="Immunization" 
+                                        {% if selected_category == 'Immunization' %}checked{% endif %} />
+                                    <label class="form-check-label" for="immunization">Immunization</label>
+                                </div>
+                            </div>
+                        </form>                        
+                    </div>                    
+                </div>
+            </div>
+            {% for blog in page_obj %}
+                {% if forloop.first %}
+                <div class="col-xl-9 col-lg-8 col-12">
+                    <div class="card shadow mb-5">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12">
+                                    <img src="{{ blog.image.url }}" style="width: 100%;" alt="Blog Image">
+                                </div>
+                                <div class="col-12">
+                                    <h5 class="mt-2">{{ blog.title }}</h5>
+                                    <p class="mt-1 blog-summary" data-summary="{{ blog.summary }}"></p>
+                                    <a href="{% url 'patient-view-blog' blog.id %}" class="view-more">View More?</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                    <div class="col-xl-9 col-12 offset-xl-3 col-lg-8 offset-lg-4">
+                        <div class="card shadow mb-5">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <img src="{{ blog.image.url }}" style="width: 100%;" alt="Blog Image">
+                                    </div>
+                                    <div class="col-12">
+                                        <h5 class="mt-2">{{ blog.title }}</h5>
+                                        <p class="mt-1 blog-summary" data-summary="{{ blog.summary }}"></p>
+                                        <a href="{% url 'patient-view-blog' blog.id %}" class="view-more">View More?</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if page_obj %}
+            {% include "patient/blog_pagination.html" %}
+        {% else %}
+            <script>
+                swal("Warning", "Sorry, No results found", "warning")
+            </script>
+        {% endif %}
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function truncateSummary(element, wordLimit) {
+                var summaries = document.querySelectorAll(element);
+                summaries.forEach(function(summary) {
+                    var text = summary.getAttribute('data-summary');
+                    var words = text.split(' ');
+                    if (words.length > wordLimit) {
+                        summary.textContent = words.slice(0, wordLimit).join(' ') + '...';
+                    } else {
+                        summary.textContent = text;
+                    }
+                });
+            }
+
+            truncateSummary('.blog-summary', 15);
+        });
+    </script>
+
+{% endblock %}
