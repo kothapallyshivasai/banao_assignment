@@ -1,0 +1,34 @@
+{% load static %}
+<div class="row">
+    <div class="col-xl-10 offset-xl-1 col-12">
+        <nav aria-label="Pagination" class="d-grid gap-2 d-flex mt-1 justify-content-end" style="margin-right: 13px;">
+            <ul class="pagination">
+                {% if doctors.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="{% url 'patient-book-appointment' %}?page={{ doctors.previous_page_number }}"><img src="{% static 'images/less-than.png' %}" style="height: 20px; width: 20px;" alt="Less Than"></a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#"><img src="{% static 'images/less-than.png' %}" style="height: 20px; width: 20px;" alt="Less Than"></a>
+                    </li>
+                {% endif %}
+                
+                {% for i in doctors.paginator.page_range %}
+                    <li class="page-item {% if doctors.number == i %}active{% endif %}">
+                        <a class="page-link" href="{% url 'patient-book-appointment' %}?page={{ i }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                
+                {% if doctors.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{% url 'patient-book-appointment' %}?page={{ doctors.next_page_number }}"><img src="{% static 'images/greater-than.png' %}" style="height: 20px; width: 20px;" alt="Greater Than"></a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#"><img src="{% static 'images/greater-than.png' %}" style="height: 20px; width: 20px;" alt="Greater Than"></a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>

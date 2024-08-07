@@ -40,7 +40,21 @@
             {% endfor %}
         </div>
 
-        {% include "doctor/blog_pagination.html" %}
+        {% if page_obj %}
+            {% include "doctor/blog_pagination.html" %}
+        {% endif %}
+
+        {% if not page_obj %}
+            <script>
+                swal({
+                    title: "Error",
+                    text: "No blogs found!",
+                    icon: "error"
+                }).then(() => {
+                    window.location.href = "/doctor/doctor-dashboard";
+                });
+            </script>
+        {% endif %}
 
     </div>
 

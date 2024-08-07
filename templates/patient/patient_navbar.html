@@ -14,6 +14,12 @@
                     <a class="nav-link hover-animation {% if active == 2 %} active {% endif %}" href="{% url 'patient-view-blogs' %}">View Blogs</a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link hover-animation {% if active == 3 %} active {% endif %}" href="{% url 'patient-your-appointments' %}">Your Appointments</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link hover-animation {% if active == 4 %} active {% endif %}" href="{% url 'patient-book-appointment' %}">Book Appointment</a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link hover-animation" href="{% url 'logout' %}">Logout</a>
                 </li>
             </ul>

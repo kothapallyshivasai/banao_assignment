@@ -100,4 +100,79 @@
         <br>
     </div>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", async () => {
+            const rejectedAppointments = [
+//                {% for i in rejected_appointments %}
+                    {
+                        doctor: "{{ i.doctor.username }}",
+                        specialization: "{{ i.doctor_specialization }}",
+                        date: "{{ i.appointment_date }}",
+                        time: "{{ i.appointment_time }}",
+                        endTime: "{{ i.appointment_end_time }}"
+                    },
+//                {% endfor %}
+            ];
+
+            const approvedAppointments = [
+//                {% for j in approved_appointments %}
+                    {
+                        doctor: "{{ j.doctor.username }}",
+                        specialization: "{{ j.doctor_specialization }}",
+                        date: "{{ j.appointment_date }}",
+                        time: "{{ j.appointment_time }}",
+                        endTime: "{{ j.appointment_end_time }}"
+                    },
+//                {% endfor %}
+            ];
+
+            const messages = [
+//                {% for message in messages %}
+                    "{{ message }}",
+//                {% endfor %}
+            ];
+
+            async function showAlertsSequentially() {
+                for (const i of rejectedAppointments) {
+                    await Swal.fire({
+                        title: "Sorry",
+                        text: `Sorry, your request sent to ${i.doctor} for ${i.specialization} at ${i.date}, ${i.time} to ${i.endTime} has been rejected. Please try a different time or different doctor.`,
+                        icon: "info"
+                    });
+                }
+
+                for (const j of approvedAppointments) {
+                    await Swal.fire({
+                        title: "Success",
+                        text: `Congrats, your request sent to ${j.doctor} for ${j.specialization} at ${j.date}, ${j.time} to ${j.endTime} has been approved. Check your email, an invitation has been sent. Stay available at the mentioned time.`,
+                        icon: "success"
+                    });
+                }
+
+                for (const message of messages) {
+                    await Swal.fire({
+                        title: "Message",
+                        text: message,
+                        icon: "info"
+                    });
+                }
+            }
+
+            if (rejectedAppointments.length > 0 || approvedAppointments.length > 0 || messages.length > 0) {
+                await showAlertsSequentially();
+
+                fetch("{% url 'patient-dashboard' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: new URLSearchParams({
+                        'update_status': 'true'
+                    })
+                });
+            }
+        });
+    </script>
+
 {% endblock %}

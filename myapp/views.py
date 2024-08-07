@@ -2,17 +2,57 @@ from django.core.paginator import Paginator
 from django.contrib.auth import authenticate, login
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from .models import Blog, CustomUserProfile
+from .models import Appointment, Blog, CustomUserProfile
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
+from django.http import HttpResponse
+import datetime as dt
+import os.path
+from django.http import HttpResponse
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+from google_auth_oauthlib.flow import InstalledAppFlow
+
+SCOPES = ["https://www.googleapis.com/auth/calendar"]
 
 @never_cache
 def home(request):
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+ 
+    except Exception as e:
+        pass
+
     return render(request, "index.html", {"active": 1})
 
 @never_cache
 def register(request):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+ 
+    except Exception as e:
+        pass
+
     if request.method == "POST":
         username = request.POST.get('username')
         email = request.POST.get('email-id')
@@ -62,23 +102,22 @@ def register(request):
     return render(request, "register.html", {"active": 3})
 
 @never_cache
-def patient_login(request):
-    if request.method == "POST":
-        username = request.POST.get('username')
-        password = request.POST.get('password')
-        
-        user = authenticate(request, username=username, password=password)
-        if user is not None and user.user_type == 'PATIENT':
-            login(request, user)
-            return redirect('patient-dashboard')
-        else:
-            messages.error(request, "Invalid username or password.")
-            return redirect('patient_login')
-    
-    return render(request, "patient_login.html", {"active": 2})
-
-@never_cache
 def doctor_login(request):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+ 
+    except Exception as e:
+        pass
+
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -96,11 +135,37 @@ def doctor_login(request):
 @never_cache
 @login_required
 def doctor_dashboard(request):
-    return render(request, "doctor/doctor_dashboard.html", {"active": 1})
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+ 
+    except Exception as e:
+        pass
+
+    appointments = Appointment.objects.filter(doctor=request.user, appointment_status="Not Seen").count()
+
+    return render(request, "doctor/doctor_dashboard.html", {"active": 1, "count": appointments})
 
 @never_cache
 @login_required
 def doctor_blogs(request):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+        
+    except Exception as e:
+        pass
+
     blogs = Blog.objects.filter(author=request.user)
     paginator = Paginator(blogs, 2)
     page_number = request.GET.get('page', 1)
@@ -111,6 +176,18 @@ def doctor_blogs(request):
 @never_cache
 @login_required
 def doctor_add_blog(request):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+    
+    except Exception as e:
+        pass
+
     if request.method == "POST":
         title = request.POST.get("title")
         image = request.FILES.get("image")
@@ -150,6 +227,18 @@ def doctor_delete_blog(request, id):
 @never_cache
 @login_required
 def doctor_edit_blog(request, id):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+        
+    except Exception as e:
+        pass
+
     blog = get_object_or_404(Blog, id=id)
     
     if request.method == "POST":
@@ -180,15 +269,99 @@ def doctor_edit_blog(request, id):
 
     return render(request, "doctor/doctor_edit_blog.html", {"blog": blog})
 
+@never_cache
+@login_required
+def doctor_schedule(request):
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+        
+    except Exception as e:
+        pass
+
+    return render(request, "doctor/schedule.html", {"active": 4})
+
+@never_cache
+@login_required
+def doctor_requested_appointments(request):
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+        
+    except Exception as e:
+        pass
+
+    appointments = Appointment.objects.filter(doctor=request.user, appointment_status__in=["Not Seen", "Seen"])
+    appointments.update(appointment_status="Seen")
+    
+    return render(request, "doctor/requested_appointments.html", {"active": 5, "appointments": appointments})
+
+@never_cache
+@login_required 
+def doctor_appointment_approve(request, id):
+    appointment = Appointment.objects.get(pk=id, doctor=request.user)
+    appointment.appointment_status = "Approved"
+    appointment.save()
+    messages.info(request, "Appointment has been Accepted!")
+    return redirect("doctor-requested-appointments")
+
+@never_cache
+@login_required 
+def doctor_appointment_rejected(request, id):
+    appointment = Appointment.objects.get(pk=id, doctor=request.user)
+    appointment.appointment_status = "Rejected"
+    appointment.save()
+    messages.info(request, "Appointment has been Rejected!")
+    return redirect("doctor-requested-appointments")
 
 @never_cache
 @login_required
 def patient_dashboard(request):
-    return render(request, "patient/patient_dashboard.html", {"active": 1})
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+    except Exception as e:
+        pass
+
+    rejected_appointments = Appointment.objects.filter(patient=request.user, appointment_status="Rejected")
+    approved_appointments = Appointment.objects.filter(patient=request.user, appointment_status="Approved")
+    
+    if request.method == "POST" and request.POST.get('update_status'):
+        approved_appointments.update(appointment_status="Done")
+        rejected_appointments.delete()
+
+    return render(request, "patient/patient_dashboard.html", {"active": 1, "rejected_appointments": rejected_appointments, 
+                            "approved_appointments": approved_appointments})
 
 @never_cache
 @login_required
 def patient_view_blogs(request):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+    except Exception as e:
+        pass
+
     category_type = request.POST.get('category_type', None)
     
     if request.method == "POST":
@@ -219,11 +392,181 @@ def patient_view_blogs(request):
     })
 
 @never_cache
+def patient_login(request):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+        if user.user_type == "PATIENT":
+            return redirect("patient-dashboard")
+        
+    except Exception as e:
+        pass
+
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        
+        user = authenticate(request, username=username, password=password)
+        if user is not None and user.user_type == 'PATIENT':
+            login(request, user)
+            return redirect('patient-dashboard')
+        else:
+            messages.error(request, "Invalid username or password.")
+            return redirect('patient_login')
+    
+    return render(request, "patient_login.html", {"active": 2})
+
+@never_cache
 @login_required
 def patient_view_blog(request, id):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+    except Exception as e:
+        pass
+
     blog = Blog.objects.get(id=id, draft=False)
     return render(request, "patient/patient_view_blog.html", {"blog": blog})
 
+@never_cache
+@login_required
+def patient_your_appointments(request):
+
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+    except Exception as e:
+        pass
+
+    appointments = Appointment.objects.filter(patient=request.user.id)
+    return render(request, "patient/your_appointments.html", {"appointments": appointments, "active": 3})
+
+@never_cache
+@login_required
+def patient_book_appointment(request):
+    try:
+        user = request.user
+        if user.is_superuser:
+            return redirect("/admin")
+        
+        if user.user_type == "DOCTOR":
+            return redirect("doctor-dashboard")
+        
+    except Exception as e:
+        pass
+
+    if request.method == "POST":
+
+        appointment = Appointment()
+        appointment.doctor = CustomUserProfile.objects.get(username=request.POST.get('doctor_username'))
+        appointment.patient = request.user
+        appointment.doctor_specialization = request.POST.get('speciality')
+        appointment.appointment_date = request.POST.get('date')
+        appointment.appointment_status = "Not Seen"
+
+        start_time_str = request.POST.get('start_time')
+        start_time = dt.datetime.strptime(start_time_str, '%H:%M').time()
+
+        appointment.appointment_time = start_time
+        appointment_end_time = (dt.datetime.combine(dt.date.today(), start_time) + dt.timedelta(minutes=45)).time()
+
+        appointment.appointment_end_time = appointment_end_time
+        appointment.save()
+        
+        messages.info(request, "Appointment was sent, Please wait until doctor responds.")
+        return redirect("patient-dashboard")
+
+    doctors = CustomUserProfile.objects.filter(user_type="DOCTOR")
+    paginator = Paginator(doctors, 6)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    return render(request, "patient/book_appointment.html", {"doctors": page_obj, "active": 4})
+
+@login_required
 def logout_user(request):
     logout(request)
     return redirect('home')
+
+
+
+
+
+
+
+
+
+
+
+# event = {
+#             'summary': f'Appointment with {doctor.first_name} {doctor.last_name}',
+#             'location': 'Online',
+#             'description': f'Speciality: {speciality}',
+#             'start': {
+#                 'dateTime': f'{date}T{start_time}:00',
+#                 'timeZone': 'Asia/Kolkata',
+#             },
+#             'end': {
+#                 'dateTime': f'{date}T{end_time}:00',
+#                 'timeZone': 'Asia/Kolkata',
+#             },
+#             'attendees': [
+#                 {'email': doctor.email},
+#                 {'email': patient.email},
+#             ],
+#         }
+
+#         creds = None
+
+#         if os.path.exists("token.json"):
+#             try:
+#                 creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+#             except Exception as e:
+#                 print(f"Error loading credentials from file: {e}")
+
+#         if not creds or not creds.valid:
+#             if creds and creds.expired and creds.refresh_token:
+#                 try:
+#                     creds.refresh(Request())
+#                 except Exception as e:
+#                     print(f"Error refreshing credentials: {e}")
+#             else:
+#                 flow = InstalledAppFlow.from_client_secrets_file("credentials-desk.json", SCOPES)
+#                 creds = flow.run_local_server(port=0)
+            
+#             if creds:
+#                 with open("token.json", "w") as token:
+#                     token.write(creds.to_json())
+#             else:
+#                 print("Failed to obtain credentials")
+#                 return HttpResponse({'error': 'Failed to obtain credentials'})
+
+#         try:
+#             service = build('calendar', 'v3', credentials=creds)
+#             event_result = service.events().insert(calendarId='primary', body=event).execute()
+#             response_data = {
+#                 'doctor_username': doctor.username,
+#                 'date': date,
+#                 'start_time': start_time,
+#                 'end_time': end_time
+#             }
+#             return HttpResponse(response_data)
+#         except HttpError as error:
+#             print(f'An error occurred: {error}')
+#             return HttpResponse("'error': 'An error occurred while creating the event.'")

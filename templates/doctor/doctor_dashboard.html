@@ -17,6 +17,12 @@
         {% endfor %}
     {% endif %}
 
+    {% if count %}
+        <script>
+            swal("New Appointments", "You have {{count}} new requested appointment's, Please check them out. ", "info")
+        </script>
+    {% endif %}
+
     <div class="container mt-3">
         <div class="card" style="border-radius: 3px; border-color: black;">
             <div class="card-body">

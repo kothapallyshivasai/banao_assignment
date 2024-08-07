@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %} Requested Appointments {% endblock %}
+
+{% block nav %}
+    {% include "doctor/doctor_navbar.html" %}
+{% endblock %}
+
+{% block content %}
+
+    {% for m in messages %}
+        <script>
+            swal("info", "{{m}}", "info")
+        </script>
+    {% endfor %}
+
+    <div class="container mt-5">
+        <div class="row">
+            {% for i in appointments %}
+                <div class="col-lg-4 col-md-6 col-12 mb-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <img src="{{i.patient.profile_picture.url}}" alt="Patient Image" class="img-fluid">
+                            <div class="mt-3 mb-2">
+                                <b>Patient Name: </b> {{i.patient.username}} <br>
+                                <b>Speciality: </b> {{i.doctor_specialization}}  <br>
+                                <b>Appointment Date: </b> {{i.appointment_date}} <br>
+                                <b>Appointment Time: </b> {{i.appointment_time}} - {{i.appointment_end_time}} 
+                            </div>
+                        </div>
+                        <div class="card-footer d-flex justify-content-end align-items-end">
+                            <a href="{% url 'doctor-appointment-rejected' i.id  %}" class="m-1"><img src="{% static 'images/delete-icon.png' %}" alt="Delete Icon" style="height: 45px; width: 45px;"></a>
+                            <a href="{% url 'doctor-appointment-approve' i.id  %}" class="m-1"><img src="{% static 'images/accept-icon.png' %}" alt="Accept Icon" style="height: 45px; width: 45px;"></a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+{% endblock %}
