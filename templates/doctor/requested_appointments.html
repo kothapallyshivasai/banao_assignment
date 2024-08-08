@@ -10,9 +10,13 @@
 {% block content %}
 
     {% for m in messages %}
-        <script>
-            swal("info", "{{m}}", "info")
-        </script>
+    <script>
+        Swal.fire({
+            title: "Information",
+            text: "{{m}}",
+            icon: "info"
+        });
+    </script>
     {% endfor %}
 
     <div class="container mt-5">
@@ -38,5 +42,11 @@
             {% endfor %}
         </div>
     </div>
+
+    {% if not appointments %}
+        <div class="container mt-5 pt-5">
+            <h2 class="text-center">Currently there are no appointments.</h2>
+        </div>
+    {% endif %}
 
 {% endblock %}

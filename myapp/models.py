@@ -54,7 +54,8 @@ class Appointment(models.Model):
         ('Not Seen', 'Not Seen'),
         ('Seen', 'Seen'),
         ('Approved', 'Approved'),
-        ('Done', 'Done'),
+        ('Waiting', 'Waiting'),
+        ('Completed', 'Completed'),
         ('Rejected', 'Rejected')
     ]
 
@@ -63,6 +64,7 @@ class Appointment(models.Model):
     doctor_specialization = models.CharField(max_length=100)
     appointment_status = models.CharField(max_length=20, choices=APPOINTMENT_CHOICES)
     appointment_date = models.DateField()
+    appointment_end_date = models.DateField(default=None)
     appointment_time = models.TimeField()
     appointment_end_time = models.TimeField()
 

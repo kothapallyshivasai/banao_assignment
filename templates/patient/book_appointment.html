@@ -8,6 +8,17 @@
 {% endblock %}
 
 {% block content %}
+
+{% for m in messages %}
+    <script>
+        Swal.fire({
+            title: "Error",
+            text: "{{m}}",
+            icon: "error"
+        });
+    </script>
+{% endfor %}
+
 <div class="container mt-4">
     <div class="row">
         {% for doctor in doctors %}

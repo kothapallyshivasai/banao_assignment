@@ -9,8 +9,29 @@
 
 {% block content %}
 
-    <div class="container mt-xl-2 mt-4">
-        Your Appointments
+    <div class="container mt-xl-2 mt-5">
+        <div class="row">
+            {% for ob in appointments %}
+            <div class="col-3 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <img src="{{ ob.doctor.profile_picture.url }}" alt="Doctor Image" style="background-size: cover; background-position: center; width: 100%;">
+                        <hr>
+                        <b>Doctor Name: </b> {{ob.doctor.username}} <br>
+                        <b>Specialization: </b> {{ob.doctor_specialization}} <br>
+                        <b>Patient Name: </b> {{ob.patient.username}}  <br>
+                        <b>Date: </b> {{ob.appointment_date}} <br>
+                        <b>End Date: </b> {{ob.appointment_end_date}} <br>
+                        <b>Time: </b> {{ob.appointment_time}} - {{ob.appointment_end_time}} <br>
+                        <b>Appointment Status: </b> {{ob.appointment_status}} 
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% if appointments %}
+            {% include "patient/your_appointment_pagination.html" %}
+        {% endif %}
     </div>
 
 {% endblock %}

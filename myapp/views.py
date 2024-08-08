@@ -6,10 +6,8 @@ from .models import Appointment, Blog, CustomUserProfile
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import never_cache
-from django.http import HttpResponse
 import datetime as dt
 import os.path
-from django.http import HttpResponse
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -283,7 +281,21 @@ def doctor_schedule(request):
     except Exception as e:
         pass
 
-    return render(request, "doctor/schedule.html", {"active": 4})
+    appointments = Appointment.objects.filter(doctor=request.user.id)
+
+    for appointment in appointments:
+        now = dt.datetime.now()
+        appointment_end_datetime = dt.datetime.combine(appointment.appointment_end_date, appointment.appointment_end_time)
+        
+        if now >= appointment_end_datetime and appointment.appointment_status != 'Completed':
+            appointment.appointment_status = 'Completed'
+            appointment.save()
+
+    paginator = Paginator(appointments, 8)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "doctor/schedule.html", {"active": 4, "appointments": page_obj})
 
 @never_cache
 @login_required
@@ -305,14 +317,83 @@ def doctor_requested_appointments(request):
     return render(request, "doctor/requested_appointments.html", {"active": 5, "appointments": appointments})
 
 @never_cache
-@login_required 
+@login_required
 def doctor_appointment_approve(request, id):
-    appointment = Appointment.objects.get(pk=id, doctor=request.user)
-    appointment.appointment_status = "Approved"
-    appointment.save()
-    messages.info(request, "Appointment has been Accepted!")
-    return redirect("doctor-requested-appointments")
+    try:
+        appointment = Appointment.objects.get(pk=id, doctor=request.user)
 
+        start_datetime = dt.datetime.combine(appointment.appointment_date, appointment.appointment_time).isoformat()
+        end_datetime = dt.datetime.combine(appointment.appointment_end_date, appointment.appointment_end_time).isoformat()
+
+        event = {
+            'summary': f'Appointment with {appointment.doctor.first_name} {appointment.doctor.last_name} - {id}',
+            'location': 'Online',
+            'description': f'Speciality: {appointment.doctor_specialization}',
+            'start': {
+                'dateTime': f"{start_datetime}Z",
+                'timeZone': 'Asia/Kolkata',
+            },
+            'end': {
+                'dateTime': f"{end_datetime}Z",
+                'timeZone': 'Asia/Kolkata',
+            },
+            'attendees': [
+                {'email': appointment.patient.email},
+                {'email': appointment.doctor.email},
+            ],
+            'organizer': {
+                'email': appointment.doctor.email,
+            },
+        }
+
+        creds = None
+
+        if os.path.exists("token.json"):
+            try:
+                creds = Credentials.from_authorized_user_file("token.json", SCOPES)
+            except Exception as e:
+                print(f"Error loading credentials from file: {e}")
+
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token: 
+                try:
+                    creds.refresh(Request())
+                except Exception as e:
+                    print(f"Error refreshing credentials: {e}")
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file("credentials-desk.json", SCOPES)
+                creds = flow.run_local_server(port=0)
+            
+            if creds:
+                with open("token.json", "w") as token:
+                    token.write(creds.to_json())
+            else:
+                print("Failed to obtain credentials")
+                messages.error(request, "Something went wrong, Please try again later!")
+                return redirect("doctor-requested-appointments")
+
+        try:
+            service = build('calendar', 'v3', credentials=creds)
+            event_result = service.events().insert(calendarId='primary', body=event).execute()
+            messages.success(request, "Appointment has been Accepted!")
+
+            appointment.appointment_status = "Approved"
+            appointment.save()
+
+            return redirect("doctor-requested-appointments")
+        except HttpError as error:
+            print(f'An error occurred: {error}')
+            messages.error(request, "Something went wrong, Please try again later!")
+            return redirect("doctor-requested-appointments")
+
+    except Appointment.DoesNotExist:
+        messages.error(request, "Appointment does not exist.")
+        return redirect("doctor-requested-appointments")
+    except Exception as e:
+        print(f'An error occurred: {e}')
+        messages.error(request, "Something went wrong, Please try again later!")
+        return redirect("doctor-requested-appointments")
+    
 @never_cache
 @login_required 
 def doctor_appointment_rejected(request, id):
@@ -456,7 +537,20 @@ def patient_your_appointments(request):
         pass
 
     appointments = Appointment.objects.filter(patient=request.user.id)
-    return render(request, "patient/your_appointments.html", {"appointments": appointments, "active": 3})
+
+    for appointment in appointments:
+        now = dt.datetime.now()
+        appointment_end_datetime = dt.datetime.combine(appointment.appointment_end_date, appointment.appointment_end_time)
+        
+        if now >= appointment_end_datetime and appointment.appointment_status != 'Completed':
+            appointment.appointment_status = 'Completed'
+            appointment.save()
+
+    paginator = Paginator(appointments, 8)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "patient/your_appointments.html", {"appointments": page_obj, "active": 3})
 
 @never_cache
 @login_required
@@ -473,21 +567,34 @@ def patient_book_appointment(request):
         pass
 
     if request.method == "POST":
+        appointment_date_str = request.POST.get('date')
+        start_time_str = request.POST.get('start_time')
+
+        appointment_date = dt.datetime.strptime(appointment_date_str, '%Y-%m-%d').date()
+        start_time = dt.datetime.strptime(start_time_str, '%H:%M').time()
+
+        now = dt.datetime.now()
+        appointment_start_datetime = dt.datetime.combine(appointment_date, start_time)
+
+        if appointment_date < now.date() or (appointment_date == now.date() and start_time < now.time()):
+            messages.error(request, "Appointment date or time cannot be in the past.")
+            return redirect("patient-book-appointment")
 
         appointment = Appointment()
         appointment.doctor = CustomUserProfile.objects.get(username=request.POST.get('doctor_username'))
         appointment.patient = request.user
         appointment.doctor_specialization = request.POST.get('speciality')
-        appointment.appointment_date = request.POST.get('date')
         appointment.appointment_status = "Not Seen"
 
-        start_time_str = request.POST.get('start_time')
-        start_time = dt.datetime.strptime(start_time_str, '%H:%M').time()
-
+        appointment.appointment_date = appointment_date
         appointment.appointment_time = start_time
-        appointment_end_time = (dt.datetime.combine(dt.date.today(), start_time) + dt.timedelta(minutes=45)).time()
+
+        appointment_end_datetime = appointment_start_datetime + dt.timedelta(minutes=45)
+        appointment_end_time = appointment_end_datetime.time()
 
         appointment.appointment_end_time = appointment_end_time
+        appointment.appointment_end_date = appointment_end_datetime.date()
+
         appointment.save()
         
         messages.info(request, "Appointment was sent, Please wait until doctor responds.")
@@ -504,69 +611,3 @@ def logout_user(request):
     logout(request)
     return redirect('home')
 
-
-
-
-
-
-
-
-
-
-
-# event = {
-#             'summary': f'Appointment with {doctor.first_name} {doctor.last_name}',
-#             'location': 'Online',
-#             'description': f'Speciality: {speciality}',
-#             'start': {
-#                 'dateTime': f'{date}T{start_time}:00',
-#                 'timeZone': 'Asia/Kolkata',
-#             },
-#             'end': {
-#                 'dateTime': f'{date}T{end_time}:00',
-#                 'timeZone': 'Asia/Kolkata',
-#             },
-#             'attendees': [
-#                 {'email': doctor.email},
-#                 {'email': patient.email},
-#             ],
-#         }
-
-#         creds = None
-
-#         if os.path.exists("token.json"):
-#             try:
-#                 creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-#             except Exception as e:
-#                 print(f"Error loading credentials from file: {e}")
-
-#         if not creds or not creds.valid:
-#             if creds and creds.expired and creds.refresh_token:
-#                 try:
-#                     creds.refresh(Request())
-#                 except Exception as e:
-#                     print(f"Error refreshing credentials: {e}")
-#             else:
-#                 flow = InstalledAppFlow.from_client_secrets_file("credentials-desk.json", SCOPES)
-#                 creds = flow.run_local_server(port=0)
-            
-#             if creds:
-#                 with open("token.json", "w") as token:
-#                     token.write(creds.to_json())
-#             else:
-#                 print("Failed to obtain credentials")
-#                 return HttpResponse({'error': 'Failed to obtain credentials'})
-
-#         try:
-#             service = build('calendar', 'v3', credentials=creds)
-#             event_result = service.events().insert(calendarId='primary', body=event).execute()
-#             response_data = {
-#                 'doctor_username': doctor.username,
-#                 'date': date,
-#                 'start_time': start_time,
-#                 'end_time': end_time
-#             }
-#             return HttpResponse(response_data)
-#         except HttpError as error:
-#             print(f'An error occurred: {error}')
-#             return HttpResponse("'error': 'An error occurred while creating the event.'")
